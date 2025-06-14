@@ -1,0 +1,19 @@
+<resources>
+    <string name="app_name">СуперApp</string>
+    <string name="music">Музыка</string>
+    <string name="books">Книги</string>
+    <string name="news">Новости</string>
+    <string name="clear_news">Очистить новости</string>
+    <string name="chapter_news">Раздел новостей</string>
+    <string name="tab_new">Новое</string>
+    <string name="tab_read">Прочитанное</string>
+    <string name="selected_tab">Выбрано</string>
+    <string-array name="music_genres">
+        <item>Поп</item>
+        <item>Диско</item>
+        <item>Рок</item>
+        <item>Классика</item>
+        <item>Саундтреки</item>
+        <item>Инструментальная</item>
+    </string-array>
+</resources>
