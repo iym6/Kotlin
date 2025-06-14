@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Курсы валют</string>
+    <string name="get_currency">Получить курсы валют</string>
+</resources>
