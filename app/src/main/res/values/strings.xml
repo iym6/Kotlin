@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">Список городов</string>
+    <string name="choose_city">Выбрать город</string>
+    <string name="show_on_map">Показать на карте</string>
+    <string name="select_city_first">Сначала выберите город</string>
+    <string name="no_apps_found">Приложений не найдено</string>
+    <string name="city_template">Город: %s</string>
+    <string name="district_template">Федеральный округ: %s</string>
+    <string name="region_template">Регион: %s</string>
+    <string name="postal_code_template">Почтовый индекс: %s</string>
+    <string name="timezone_template">Часовой пояс: %s</string>
+    <string name="population_template">Население: %s</string>
+    <string name="founded_template">Основан в: %s</string>
+</resources>
