@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">Разрешения</string>
+    <string name="get_contacts">Получить контакты</string>
+    <string name="need_permission">Необходимо разрешение</string>
+    <string name="to_show_contacts">Для отображения контактов приложению требуется доступ к ним.</string>
+    <string name="good">Хорошо</string>
+    <string name="no_thanks">Нет, спасибо</string>
+    <string name="access_denied">Доступ запрещён</string>
+    <string name="without_permission">Без разрешения приложение не может отобразить контакты. Вы можете предоставить разрешение в настройках.</string>
+    <string name="open_settings">Открыть настройки</string>
+    <string name="no_contacts">Контакты не найдены.</string>
+</resources>
