@@ -1,0 +1,23 @@
+<resources>
+    <string name="app_name">Уведомление</string>
+
+    <!-- Основной экран -->
+    <string name="default_text">Нажмите кнопку для показа уведомления</string>
+    <string name="show_notification_button">Показать уведомление</string>
+    <string name="selected_color_text">Выбран цвет: %s</string>
+    <string name="invalid_color_toast">Некорректный формат цвета</string>
+
+    <!-- Уведомление -->
+    <string name="notification_channel_id">color_channel</string>
+    <string name="notification_channel_name">Управляющий</string>
+    <string name="notification_channel_description">Канал для управления цветом фона</string>
+    <string name="notification_title">Управляющий</string>
+    <string name="notification_content">Отсюда можно управлять цветом фона программы.</string>
+    <string name="reset_color_action">Сбросить цвет</string>
+    <string name="set_color_action">Задать цвет</string>
+    <string name="color_input_hint">Цвет в формате RRGGBB</string>
+
+    <!-- Действия -->
+    <string name="action_reset_color">ru.ilyamorozov.lab20.ACTION_RESET_COLOR</string>
+    <string name="action_set_color">ru.ilyamorozov.lab20.ACTION_SET_COLOR</string>
+</resources>
