@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">GithubSearcher</string>
+    <string name="no_language">Не указан</string>
+    <string name="no_description">Нет описания</string>
+    <string name="nameRepo">Название проекта: </string>
+    <string name="authorRepo">Автор проекта: </string>
+    <string name="languageRepo">Язык программирования: </string>
+    <string name="input">Введите запрос</string>
+    <string name="search">Поиск</string>
+</resources>
