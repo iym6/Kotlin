@@ -1,5 +1,6 @@
 package ru.ilyamorozov.bookroom
 
+import android.app.AlertDialog
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -15,16 +16,32 @@ class ToReadFragment : Fragment() {
     private lateinit var adapter: BookAdapter
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View? {
         val view = inflater.inflate(R.layout.fragment_to_read, container, false)
         val recyclerView = view.findViewById<RecyclerView>(R.id.recycler_to_read)
+
         adapter = BookAdapter(
-            onStatusClick = { book ->
-                (requireActivity() as MainActivity).showStartReadingDialog(book)
+            onLongClick = { book ->
+                AlertDialog.Builder(requireContext())
+                    .setTitle(book.title)
+                    .setItems(
+                        arrayOf(
+                            getString(R.string.start_reading),
+                            getString(R.string.edit_book),
+                            getString(R.string.cancel)
+                        )
+                    ) { _, which ->
+                        when (which) {
+                            0 -> (requireActivity() as MainActivity).showStartReadingDialog(book)
+                            1 -> (requireActivity() as MainActivity).showAddBookDialog(book)
+                        }
+                    }
+                    .show()
             },
-            onEditClick = { (requireActivity() as MainActivity).showAddBookDialog(it) },
+            onCoverClick = { book ->
+                (requireActivity() as MainActivity).showQuickViewDialog(book)
+            },
             onItemClick = { }
         )
 

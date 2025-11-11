@@ -327,16 +327,22 @@ class MainActivity : AppCompatActivity() {
         val view = LayoutInflater.from(this).inflate(R.layout.dialog_mark_read, null)
         builder.setView(view)
 
-        val sliderRating = view.findViewById<com.google.android.material.slider.Slider>(R.id.slider_rating)
-        val tvRatingValue = view.findViewById<TextView>(R.id.tv_rating_value)
+
+        val customSliderLayout = view.findViewById<FrameLayout>(R.id.custom_rating_slider)
+        val slider = customSliderLayout.findViewById<com.google.android.material.slider.Slider>(R.id.slider)
+        val starsView = customSliderLayout.findViewById<RatingStarsView>(R.id.stars_view)
         val etPagesRead = view.findViewById<EditText>(R.id.et_pages_read)
         val cbAllPages = view.findViewById<CheckBox>(R.id.cb_all_pages)
         val etReview = view.findViewById<TextInputEditText>(R.id.et_review)
+        val tvRatingValue = view.findViewById<TextView>(R.id.tv_rating_value)
 
         // Инициализация
-        sliderRating.value = book.rating ?: 5.0f
-        tvRatingValue.text = String.format("%.1f", sliderRating.value)
-        sliderRating.addOnChangeListener { _, value, _ ->
+        slider.value = book.rating ?: 5.0f
+        tvRatingValue.text = String.format("%.1f", slider.value)
+        starsView.setRating(slider.value)
+
+        slider.addOnChangeListener { _, value, _ ->
+            starsView.setRating(value)
             tvRatingValue.text = String.format("%.1f", value)
         }
 
@@ -358,7 +364,7 @@ class MainActivity : AppCompatActivity() {
         etReview.setText(book.review ?: "")
         builder.setTitle(getString(R.string.mark_as_read))
         builder.setPositiveButton(getString(R.string.mark)) { _, _ ->
-            val rating = sliderRating.value.takeIf { it > 0 }?.toFloat()
+            val rating = slider.value.takeIf { it > 0 }?.toFloat()
             val pagesReadStr = etPagesRead.text.toString().trim()
             val pagesRead = if (pagesReadStr.isBlank()) null else pagesReadStr.toIntOrNull()
 
@@ -487,5 +493,41 @@ class MainActivity : AppCompatActivity() {
             days % 10 in 2..4 && days % 100 !in 12..14 -> "дня"
             else -> "дней"
         }
+    }
+    fun showQuickViewDialog(book: Book) {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_quick_view, null)
+        val imgCoverBig = dialogView.findViewById<ImageView>(R.id.img_cover_big)
+        val tvTitleBig = dialogView.findViewById<TextView>(R.id.tv_title_big)
+        val tvAuthorBig = dialogView.findViewById<TextView>(R.id.tv_author_big)
+        val tvStatus = dialogView.findViewById<TextView>(R.id.tv_status)
+
+        tvTitleBig.text = book.title
+        tvAuthorBig.text = book.author
+        tvStatus.text = when {
+            book.isRead -> "Прочитана"
+            book.isCurrentlyReading -> "Читаю сейчас"
+            else -> "Хочу прочитать"
+        }
+
+        // Загрузка обложки (большая)
+        if (!book.coverUrl.isNullOrBlank()) {
+            if (book.coverUrl!!.startsWith("http")) {
+                Glide.with(this).load(book.coverUrl!!).into(imgCoverBig)
+            } else {
+                val file = File(book.coverUrl!!)
+                if (file.exists()) {
+                    Glide.with(this).load(file).into(imgCoverBig)
+                } else {
+                    imgCoverBig.setImageResource(R.drawable.ic_book_placeholder)
+                }
+            }
+        } else {
+            imgCoverBig.setImageResource(R.drawable.ic_book_placeholder)
+        }
+
+        AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setPositiveButton("Закрыть", null)
+            .show()
     }
 }

@@ -13,9 +13,9 @@ import com.bumptech.glide.Glide
 import java.io.File
 
 class BookAdapter(
-    private val onStatusClick: (Book) -> Unit,
-    private val onEditClick: (Book) -> Unit,
-    private val onItemClick: (Book) -> Unit
+    private val onLongClick: (Book) -> Unit,
+    private val onItemClick: (Book) -> Unit = {},
+    private val onCoverClick: (Book) -> Unit
 ) : ListAdapter<Book, BookAdapter.BookViewHolder>(BookDiffCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BookViewHolder {
@@ -34,56 +34,20 @@ class BookAdapter(
         private val author: TextView = itemView.findViewById(R.id.tv_author)
         private val layoutRating: View = itemView.findViewById(R.id.layout_rating)
         private val tvRating: TextView = itemView.findViewById(R.id.tv_rating)
-        private val editIcon: ImageView = itemView.findViewById(R.id.edit_icon)
-        private fun loadCoverSmart(imageView: ImageView, coverPath: String) {
-            //это файл или URL?
-            if (coverPath.startsWith("http://") || coverPath.startsWith("https://")) {
-                // Это URL от Google Books
-                Glide.with(imageView.context)
-                    .load(coverPath)
-                    .placeholder(R.drawable.ic_book_placeholder)
-                    .into(imageView)
-            } else {
-                // Это локальный файл
-                val file = File(coverPath)
-                if (file.exists()) {
-                    Glide.with(imageView.context)
-                        .load(file)
-                        .placeholder(R.drawable.ic_book_placeholder)
-                        .into(imageView)
-                } else {
-                    // Файл удалён - placeholder
-                    imageView.setImageResource(R.drawable.ic_book_placeholder)
-                }
-            }
-        }
-        @SuppressLint("CheckResult", "DefaultLocale")
+
+        @SuppressLint("DefaultLocale")
         fun bind(book: Book) {
             title.text = book.title
             author.text = book.author
 
-            //Обложка
+            // Обложка
             if (!book.coverUrl.isNullOrBlank()) {
                 loadCoverSmart(imgCover, book.coverUrl!!)
             } else {
                 imgCover.setImageResource(R.drawable.ic_book_placeholder)
             }
 
-            //Клик по обложке → отметить прочитанной
-            imgCover.setOnClickListener {
-                onStatusClick(book)
-            }
-
-            //Клик по всей строке - просмотр отзыва-
-            itemView.setOnClickListener {
-                if (book.isRead) {
-                    onItemClick(book)
-                } else {
-                    onStatusClick(book)
-                }
-            }
-
-            //Рейтинг
+            // Рейтинг
             if (book.isRead && book.rating != null) {
                 layoutRating.visibility = View.VISIBLE
                 tvRating.text = String.format("%.1f", book.rating)
@@ -91,18 +55,45 @@ class BookAdapter(
                 layoutRating.visibility = View.GONE
             }
 
-            //Редактирование
-            editIcon.setOnClickListener {
-                onEditClick(book)
+            // ДОЛГОЕ НАЖАТИЕ → контекстное меню
+            itemView.setOnLongClickListener {
+                onLongClick(book)
+                true
+            }
+
+            // КЛИК ПО СТРОКЕ → отзыв (только если прочитана)
+            itemView.setOnClickListener {
+                if (book.isRead) {
+                    onItemClick(book)
+                }
+            }
+            imgCover.setOnClickListener {
+                onCoverClick(book)
+            }
+        }
+    }
+
+    private fun loadCoverSmart(imageView: ImageView, coverPath: String) {
+        if (coverPath.startsWith("http")) {
+            Glide.with(imageView.context)
+                .load(coverPath)
+                .placeholder(R.drawable.ic_book_placeholder)
+                .into(imageView)
+        } else {
+            val file = File(coverPath)
+            if (file.exists()) {
+                Glide.with(imageView.context)
+                    .load(file)
+                    .placeholder(R.drawable.ic_book_placeholder)
+                    .into(imageView)
+            } else {
+                imageView.setImageResource(R.drawable.ic_book_placeholder)
             }
         }
     }
 }
 
 class BookDiffCallback : DiffUtil.ItemCallback<Book>() {
-    override fun areItemsTheSame(oldItem: Book, newItem: Book): Boolean =
-        oldItem.id == newItem.id
-
-    override fun areContentsTheSame(oldItem: Book, newItem: Book): Boolean =
-        oldItem == newItem
+    override fun areItemsTheSame(oldItem: Book, newItem: Book): Boolean = oldItem.id == newItem.id
+    override fun areContentsTheSame(oldItem: Book, newItem: Book): Boolean = oldItem == newItem
 }

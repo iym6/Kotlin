@@ -1,5 +1,6 @@
 package ru.ilyamorozov.bookroom
 
+import android.app.AlertDialog
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -15,25 +16,39 @@ class CurrentlyReadingFragment : Fragment() {
     private lateinit var adapter: BookAdapter
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View? {
         val view = inflater.inflate(R.layout.fragment_currently_reading, container, false)
         val recyclerView = view.findViewById<RecyclerView>(R.id.recycler_currently_reading)
 
         adapter = BookAdapter(
-            onStatusClick = { book ->
-                //"Прочитанные" - дата окончания
-                (requireActivity() as MainActivity).showMarkAsReadDialog(book)
+            onLongClick = { book ->
+                AlertDialog.Builder(requireContext())
+                    .setTitle(book.title)
+                    .setItems(
+                        arrayOf(
+                            getString(R.string.mark_as_read),
+                            getString(R.string.cancel)
+                        )
+                    ) { _, which ->
+                        if (which == 0) {
+                            (requireActivity() as MainActivity).showMarkAsReadDialog(book)
+                        }
+                    }
+                    .show()
             },
-            onEditClick = { (requireActivity() as MainActivity).showAddBookDialog(it) },
-            onItemClick = {  }
+            onCoverClick = { book ->
+                (requireActivity() as MainActivity).showQuickViewDialog(book)
+            },
+            onItemClick = { }
         )
 
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         recyclerView.adapter = adapter
 
-        viewModel.currentlyReadingBooks.observe(viewLifecycleOwner) { adapter.submitList(it) }
+        viewModel.currentlyReadingBooks.observe(viewLifecycleOwner) { books ->
+            adapter.submitList(books)
+        }
 
         return view
     }
