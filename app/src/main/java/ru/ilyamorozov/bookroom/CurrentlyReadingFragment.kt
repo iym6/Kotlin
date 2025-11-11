@@ -23,11 +23,11 @@ class CurrentlyReadingFragment : Fragment() {
 
         adapter = BookAdapter(
             onStatusClick = { book ->
-                // Переводим в "Прочитанные" → выбираем дату окончания
+                //"Прочитанные" - дата окончания
                 (requireActivity() as MainActivity).showMarkAsReadDialog(book)
             },
             onEditClick = { (requireActivity() as MainActivity).showAddBookDialog(it) },
-            onItemClick = { /* ничего */ }
+            onItemClick = {  }
         )
 
         recyclerView.layoutManager = LinearLayoutManager(requireContext())

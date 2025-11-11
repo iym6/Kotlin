@@ -36,7 +36,7 @@ class BookAdapter(
         private val tvRating: TextView = itemView.findViewById(R.id.tv_rating)
         private val editIcon: ImageView = itemView.findViewById(R.id.edit_icon)
         private fun loadCoverSmart(imageView: ImageView, coverPath: String) {
-            // Проверяем: это файл или URL?
+            //это файл или URL?
             if (coverPath.startsWith("http://") || coverPath.startsWith("https://")) {
                 // Это URL от Google Books
                 Glide.with(imageView.context)
@@ -52,7 +52,7 @@ class BookAdapter(
                         .placeholder(R.drawable.ic_book_placeholder)
                         .into(imageView)
                 } else {
-                    // Файл удалён — fallback на placeholder
+                    // Файл удалён - placeholder
                     imageView.setImageResource(R.drawable.ic_book_placeholder)
                 }
             }
@@ -62,19 +62,19 @@ class BookAdapter(
             title.text = book.title
             author.text = book.author
 
-            // --- Обложка ---
+            //Обложка
             if (!book.coverUrl.isNullOrBlank()) {
                 loadCoverSmart(imgCover, book.coverUrl!!)
             } else {
                 imgCover.setImageResource(R.drawable.ic_book_placeholder)
             }
 
-            // --- Клик по обложке → отметить прочитанной ---
+            //Клик по обложке → отметить прочитанной
             imgCover.setOnClickListener {
                 onStatusClick(book)
             }
 
-            // --- Клик по всей строке → просмотр отзыва (только если прочитана) ---
+            //Клик по всей строке - просмотр отзыва-
             itemView.setOnClickListener {
                 if (book.isRead) {
                     onItemClick(book)
@@ -83,7 +83,7 @@ class BookAdapter(
                 }
             }
 
-            // --- Рейтинг (только для прочитанных) ---
+            //Рейтинг
             if (book.isRead && book.rating != null) {
                 layoutRating.visibility = View.VISIBLE
                 tvRating.text = String.format("%.1f", book.rating)
@@ -91,7 +91,7 @@ class BookAdapter(
                 layoutRating.visibility = View.GONE
             }
 
-            // --- Редактирование ---
+            //Редактирование
             editIcon.setOnClickListener {
                 onEditClick(book)
             }

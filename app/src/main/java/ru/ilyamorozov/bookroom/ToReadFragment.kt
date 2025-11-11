@@ -25,7 +25,7 @@ class ToReadFragment : Fragment() {
                 (requireActivity() as MainActivity).showStartReadingDialog(book)
             },
             onEditClick = { (requireActivity() as MainActivity).showAddBookDialog(it) },
-            onItemClick = { /* ничего */ }
+            onItemClick = { }
         )
 
         recyclerView.layoutManager = LinearLayoutManager(requireContext())

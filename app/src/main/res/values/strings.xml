@@ -22,4 +22,25 @@
     <string name="review">Отзыв</string>
     <string name="your_review">Поделитесь впечатлениями...</string>
     <string name="mark_as_read">Отметить как прочитанную</string>
+    <string name="scan_cancelled">Сканирование отменено</string>
+    <string name="camera_required">Камера обязательна</string>
+    <string name="cover_save_failed">Не удалось сохранить обложку</string>
+    <string name="scan_prompt">Наведите камеру на ISBN</string>
+    <string name="dialog_closed">Диалог закрыт</string>
+    <string name="book_not_found">Книга не найдена</string>
+    <string name="network_error">Ошибка сети: </string>
+    <string name="select_start_date">Выбери дату начала чтения</string>
+    <string name="start_date_title">Дата начала чтения</string>
+    <string name="mark">Отметить</string>
+    <string name="select_end_date">Выбери дату окончания чтения</string>
+    <string name="end_date_title">Дата окончания чтения</string>
+    <string name="date_in_future">Дата не может быть в будущем</string>
+    <string name="end_before_start">Дата окончания не может быть раньше начала</string>
+    <string name="pages_required">Укажите количество прочитанных страниц</string>
+    <string name="pages_exceed_total">В книге всего страниц: </string>
+    <string name="author_title_required">Автор и Название обязательны</string>
+    <string name="no_reading_info">Информация о чтении отсутствует</string>
+    <string name="no_review">Отзыв отсутствует</string>
+    <string name="close">Закрыть</string>
+
 </resources>
