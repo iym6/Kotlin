@@ -9,7 +9,7 @@ import androidx.fragment.app.activityViewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
-class ToReadFragment : Fragment() {
+class CurrentlyReadingFragment : Fragment() {
 
     private val viewModel: BookViewModel by activityViewModels()
     private lateinit var adapter: BookAdapter
@@ -18,11 +18,13 @@ class ToReadFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        val view = inflater.inflate(R.layout.fragment_to_read, container, false)
-        val recyclerView = view.findViewById<RecyclerView>(R.id.recycler_to_read)
+        val view = inflater.inflate(R.layout.fragment_currently_reading, container, false)
+        val recyclerView = view.findViewById<RecyclerView>(R.id.recycler_currently_reading)
+
         adapter = BookAdapter(
             onStatusClick = { book ->
-                (requireActivity() as MainActivity).showStartReadingDialog(book)
+                // Переводим в "Прочитанные" → выбираем дату окончания
+                (requireActivity() as MainActivity).showMarkAsReadDialog(book)
             },
             onEditClick = { (requireActivity() as MainActivity).showAddBookDialog(it) },
             onItemClick = { /* ничего */ }
@@ -31,9 +33,7 @@ class ToReadFragment : Fragment() {
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         recyclerView.adapter = adapter
 
-        viewModel.newBooks.observe(viewLifecycleOwner) { books ->
-            adapter.submitList(books)
-        }
+        viewModel.currentlyReadingBooks.observe(viewLifecycleOwner) { adapter.submitList(it) }
 
         return view
     }

@@ -1,12 +1,13 @@
 package ru.ilyamorozov.bookroom
 
 import android.Manifest
+import android.annotation.SuppressLint
+import android.app.DatePickerDialog
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
-import android.view.View
 import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -83,7 +84,8 @@ class MainActivity : AppCompatActivity() {
         TabLayoutMediator(tabLayout, viewPager) { tab, position ->
             tab.text = when (position) {
                 0 -> getString(R.string.New)
-                1 -> getString(R.string.Read)
+                1 -> getString(R.string.Currently_reading)
+                2 -> getString(R.string.Read)
                 else -> null
             }
         }.attach()
@@ -290,8 +292,39 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+    // === ОТМЕТКА "ЧИТАЮ СЕЙЧАС" ===
+    private val todayMillis: Long
+        get() = System.currentTimeMillis()
+    fun showStartReadingDialog(book: Book) {
+        Toast.makeText(this, "Выбери дату начала чтения", Toast.LENGTH_LONG).show()
+        val calendar = java.util.Calendar.getInstance()
+        val year = calendar.get(java.util.Calendar.YEAR)
+        val month = calendar.get(java.util.Calendar.MONTH)
+        val day = calendar.get(java.util.Calendar.DAY_OF_MONTH)
 
+        val datePicker = DatePickerDialog(this, { _, y, m, d ->
+            val selectedCalendar = java.util.Calendar.getInstance().apply {
+                set(y, m, d)
+            }
+            val selectedMillis = selectedCalendar.timeInMillis
+
+            if (selectedMillis > todayMillis) {
+                return@DatePickerDialog
+            }
+
+            val updated = book.copy(
+                isCurrentlyReading = true,
+                startDate = selectedMillis
+            )
+            viewModel.updateBook(updated)
+        }, year, month, day)
+        datePicker.setTitle("Дата начала чтения")
+        // Запрещаем выбор будущих дат
+        datePicker.datePicker.maxDate = todayMillis
+        datePicker.show()
+    }
     // === ОТМЕТКА "ПРОЧИТАНО" ===
+    @SuppressLint("DefaultLocale")
     fun showMarkAsReadDialog(book: Book) {
         val builder = AlertDialog.Builder(this)
         val view = LayoutInflater.from(this).inflate(R.layout.dialog_mark_read, null)
@@ -326,32 +359,62 @@ class MainActivity : AppCompatActivity() {
         }
 
         etReview.setText(book.review ?: "")
-
+        Toast.makeText(this, "Выбери дату окончания чтения", Toast.LENGTH_LONG).show()
         builder.setTitle(getString(R.string.mark_as_read))
         builder.setPositiveButton("Отметить") { _, _ ->
             val rating = sliderRating.value.takeIf { it > 0 }?.toFloat()
             val pagesReadStr = etPagesRead.text.toString().trim()
             val pagesRead = if (pagesReadStr.isBlank()) null else pagesReadStr.toIntOrNull()
 
-            if (pagesRead != null && totalPages != null && pagesRead > totalPages) {
-                Toast.makeText(this, "В книге всего $totalPages страниц", Toast.LENGTH_LONG).show()
+            if (pagesRead != null && book.pageCount != null && pagesRead > book.pageCount) {
+                Toast.makeText(this, "В книге всего ${book.pageCount} страниц", Toast.LENGTH_LONG).show()
                 return@setPositiveButton
             }
 
-            val updatedBook = book.copy(
-                isRead = true,
-                rating = rating,
-                pagesRead = pagesRead,
-                review = etReview.text.toString().trim().takeIf { it.isNotBlank() }
-            )
-            viewModel.updateBook(updatedBook)
+            // --- Выбор даты окончания ---
+            val calendar = java.util.Calendar.getInstance()
+            val year = calendar.get(java.util.Calendar.YEAR)
+            val month = calendar.get(java.util.Calendar.MONTH)
+            val day = calendar.get(java.util.Calendar.DAY_OF_MONTH)
+
+            val datePicker = DatePickerDialog(this, { _, y, m, d ->
+                val selectedCalendar = java.util.Calendar.getInstance().apply {
+                    set(y, m, d)
+                }
+                val endMillis = selectedCalendar.timeInMillis
+
+                if (endMillis > todayMillis) {
+                    return@DatePickerDialog
+                }
+
+                // Проверка: дата окончания ≥ даты начала
+                if (book.startDate != null && endMillis < book.startDate) {
+                    Toast.makeText(this, "Дата окончания не может быть раньше даты начала", Toast.LENGTH_LONG).show()
+                    return@DatePickerDialog
+                }
+
+                val updatedBook = book.copy(
+                    isRead = true,
+                    isCurrentlyReading = false,
+                    rating = rating,
+                    pagesRead = pagesRead,
+                    review = etReview.text.toString().trim().takeIf { it.isNotBlank() },
+                    endDate = endMillis
+                )
+                viewModel.updateBook(updatedBook)
+            }, year, month, day)
+            datePicker.setTitle("Дата окончания чтения")
+            datePicker.datePicker.maxDate = todayMillis
+            datePicker.show()
         }
+
 
         builder.setNegativeButton("Отмена", null)
         builder.show()
     }
 
     // === ПРОСМОТР ОТЗЫВА ===
+    @Suppress("DEPRECATION")
     fun showReviewDialog(book: Book) {
         val builder = AlertDialog.Builder(this)
         val view = LayoutInflater.from(this).inflate(R.layout.dialog_review, null)
@@ -361,7 +424,8 @@ class MainActivity : AppCompatActivity() {
         val tvTitle = view.findViewById<TextView>(R.id.tv_title)
         val tvAuthor = view.findViewById<TextView>(R.id.tv_author)
         val tvRating = view.findViewById<TextView>(R.id.tv_rating)
-        val tvPages = view.findViewById<TextView>(R.id.tv_pages)
+        val tvReadingSummary = view.findViewById<TextView>(R.id.tv_reading_summary)
+        val tvDateRange = view.findViewById<TextView>(R.id.tv_date_range)
         val tvReview = view.findViewById<TextView>(R.id.tv_review)
 
         loadCoverIntoImageView(imgCover, book.coverUrl)
@@ -369,11 +433,52 @@ class MainActivity : AppCompatActivity() {
         tvTitle.text = book.title
         tvAuthor.text = "Автор: ${book.author}"
         tvRating.text = "Оценка: ${book.rating?.let { String.format("%.1f", it) } ?: "—"}"
-        tvPages.text = "Прочитано: ${book.pagesRead ?: book.pageCount ?: "—"} страниц"
+
+        // --- ГЛАВНАЯ СТРОКА: страницы + прочитаны + за N дней ---
+        if (book.pagesRead != null && book.startDate != null && book.endDate != null) {
+            val pages = book.pagesRead!!
+            val days = (book.endDate!! - book.startDate!!) / (1000 * 60 * 60 * 24) + 1
+
+            val pagesText = pagesDeclension(pages)
+            val readText = readDeclension(pages)
+            val daysText = daysDeclension(days)
+
+            tvReadingSummary.text = "$pages $pagesText $readText за $days $daysText"
+
+            val sdf = java.text.SimpleDateFormat("d MMM yyyy", java.util.Locale("ru"))
+            tvDateRange.text = "${sdf.format(java.util.Date(book.startDate!!))} — ${sdf.format(java.util.Date(book.endDate!!))}"
+        } else {
+            tvReadingSummary.text = "Информация о чтении отсутствует"
+            tvDateRange.text = ""
+        }
+
         tvReview.text = book.review?.takeIf { it.isNotBlank() } ?: "Отзыв отсутствует"
 
         builder.setTitle("Отзыв о книге")
         builder.setPositiveButton("Закрыть", null)
         builder.show()
+    }
+
+    // Склонение: 1 страница, 2 страницы, 5 страниц
+    private fun pagesDeclension(count: Int): String {
+        return when {
+            count % 10 == 1 && count % 100 != 11 -> "страница"
+            count % 10 in 2..4 && count % 100 !in 12..14 -> "страницы"
+            else -> "страниц"
+        }
+    }
+
+    // Склонение: прочитана / прочитаны
+    private fun readDeclension(count: Int): String {
+        return if (count % 10 == 1 && count % 100 != 11) "прочитана" else "прочитаны"
+    }
+
+    // Склонение: 1 день, 2 дня, 5 дней
+    private fun daysDeclension(days: Long): String {
+        return when {
+            (days % 10).toInt() == 1 && (days % 100).toInt() != 11 -> "день"
+            days % 10 in 2..4 && days % 100 !in 12..14 -> "дня"
+            else -> "дней"
+        }
     }
 }

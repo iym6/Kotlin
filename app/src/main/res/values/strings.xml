@@ -3,7 +3,8 @@
     <string name="Author">Автор</string>
     <string name="Title">Название</string>
     <string name="Status">Прочитана</string>
-    <string name="New">Новые</string>
+    <string name="New">Хочу прочитать</string>
+    <string name="Currently_reading">Читаю сейчас</string>
     <string name="Read">Прочитанные</string>
     <string name="addBook">Добавить книгу</string>
     <string name="editBook">Редактировать книгу</string>

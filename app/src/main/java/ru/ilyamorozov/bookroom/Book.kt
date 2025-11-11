@@ -7,19 +7,24 @@ import androidx.room.PrimaryKey
 data class Book(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
 
-    // Основные
     val author: String,
     val title: String,
 
-    // Новые поля
     val coverUrl: String? = null,
     val publisher: String? = null,
     val pageCount: Int? = null,
     val description: String? = null,
 
-    // Прочтение
+    //Статус
     val isRead: Boolean = false,
-    val pagesRead: Int? = null,        // сколько прочитано
-    val rating: Float? = null,         // 0.0f .. 10.0f
-    val review: String? = null
+    val isCurrentlyReading: Boolean = false,  // ← НОВОЕ
+
+    //Чтение
+    val pagesRead: Int? = null,
+    val rating: Float? = null,
+    val review: String? = null,
+
+    //Даты
+    val startDate: Long? = null,  // ← timestamp
+    val endDate: Long? = null     // ← timestamp
 )

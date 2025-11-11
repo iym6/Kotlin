@@ -40,6 +40,41 @@ abstract class AppDatabase : RoomDatabase() {
                 db.execSQL("ALTER TABLE books_new RENAME TO books")
             }
         }
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+            CREATE TABLE books_new (
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                author TEXT NOT NULL,
+                title TEXT NOT NULL,
+                coverUrl TEXT,
+                publisher TEXT,
+                pageCount INTEGER,
+                description TEXT,
+                isRead INTEGER NOT NULL DEFAULT 0,
+                isCurrentlyReading INTEGER NOT NULL DEFAULT 0,
+                pagesRead INTEGER,
+                rating REAL,
+                review TEXT,
+                startDate INTEGER,
+                endDate INTEGER
+            )
+        """.trimIndent())
+
+                db.execSQL("""
+            INSERT INTO books_new (
+                id, author, title, coverUrl, publisher, pageCount, description,
+                isRead, pagesRead, rating, review
+            )
+            SELECT id, author, title, coverUrl, publisher, pageCount, description,
+                   isRead, pagesRead, rating, review
+            FROM books
+        """.trimIndent())
+
+                db.execSQL("DROP TABLE books")
+                db.execSQL("ALTER TABLE books_new RENAME TO books")
+            }
+        }
 
         fun getDatabase(context: android.content.Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
@@ -48,7 +83,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "books.db"
                 )
-                    .addMigrations(MIGRATION_1_2)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .build()
                 INSTANCE = instance
                 instance

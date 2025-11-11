@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="sort_options">
+        <item>Сначала новые</item>
+        <item>Сначала старые</item>
+        <item>Сначала высокий рейтинг</item>
+        <item>Сначала низкий рейтинг</item>
+    </string-array>
+</resources>

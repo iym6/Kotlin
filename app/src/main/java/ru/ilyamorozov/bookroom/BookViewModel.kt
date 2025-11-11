@@ -14,6 +14,7 @@ class BookViewModel(application: android.app.Application) : ViewModel() {
     }
 
     val newBooks: LiveData<List<Book>> = repository.getNewBooks()
+    val currentlyReadingBooks: LiveData<List<Book>> = repository.getCurrentlyReadingBooks()
     val readBooks: LiveData<List<Book>> = repository.getReadBooks()
 
     fun addBook(book: Book) = viewModelScope.launch {

@@ -4,6 +4,7 @@ import androidx.lifecycle.LiveData
 
 class BookRepository(private val bookDao: BookDao) {
     fun getNewBooks(): LiveData<List<Book>> = bookDao.getNewBooks()
+    fun getCurrentlyReadingBooks(): LiveData<List<Book>> = bookDao.getCurrentlyReadingBooks()
     fun getReadBooks(): LiveData<List<Book>> = bookDao.getReadBooks()
 
     suspend fun insert(book: Book) = bookDao.insert(book)
