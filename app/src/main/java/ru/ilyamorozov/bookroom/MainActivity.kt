@@ -359,7 +359,6 @@ class MainActivity : AppCompatActivity() {
         }
 
         etReview.setText(book.review ?: "")
-        Toast.makeText(this, "Выбери дату окончания чтения", Toast.LENGTH_LONG).show()
         builder.setTitle(getString(R.string.mark_as_read))
         builder.setPositiveButton("Отметить") { _, _ ->
             val rating = sliderRating.value.takeIf { it > 0 }?.toFloat()
@@ -376,7 +375,7 @@ class MainActivity : AppCompatActivity() {
             val year = calendar.get(java.util.Calendar.YEAR)
             val month = calendar.get(java.util.Calendar.MONTH)
             val day = calendar.get(java.util.Calendar.DAY_OF_MONTH)
-
+            Toast.makeText(this, "Выбери дату окончания чтения", Toast.LENGTH_LONG).show()
             val datePicker = DatePickerDialog(this, { _, y, m, d ->
                 val selectedCalendar = java.util.Calendar.getInstance().apply {
                     set(y, m, d)
