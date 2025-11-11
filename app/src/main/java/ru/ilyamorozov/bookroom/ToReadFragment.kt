@@ -20,10 +20,12 @@ class ToReadFragment : Fragment() {
     ): View? {
         val view = inflater.inflate(R.layout.fragment_to_read, container, false)
         val recyclerView = view.findViewById<RecyclerView>(R.id.recycler_to_read)
-
         adapter = BookAdapter(
-            onStatusClick = { toggleStatus(it) },
-            onEditClick = { (requireActivity() as MainActivity).showAddBookDialog(it) }
+            onStatusClick = { book ->
+                (requireActivity() as MainActivity).showMarkAsReadDialog(book)
+            },
+            onEditClick = { (requireActivity() as MainActivity).showAddBookDialog(it) },
+            onItemClick = { /* ничего */ }
         )
 
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
@@ -34,10 +36,5 @@ class ToReadFragment : Fragment() {
         }
 
         return view
-    }
-
-    private fun toggleStatus(book: Book) {
-        val updated = book.copy(isRead = !book.isRead)
-        viewModel.updateBook(updated)
     }
 }

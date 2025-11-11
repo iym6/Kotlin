@@ -22,8 +22,14 @@ class ReadFragment : Fragment() {
         val recyclerView = view.findViewById<RecyclerView>(R.id.recycler_read)
 
         adapter = BookAdapter(
-            onStatusClick = { toggleStatus(it) },
-            onEditClick = { (activity as MainActivity).showAddBookDialog(it) }
+            onStatusClick = { book ->
+                // Снимаем статус "прочитана", но сохраняем оценку, отзыв, страницы
+                viewModel.updateBook(book.copy(isRead = false))
+            },
+            onEditClick = { (requireActivity() as MainActivity).showAddBookDialog(it) },
+            onItemClick = { book ->
+                (requireActivity() as MainActivity).showReviewDialog(book)
+            }
         )
 
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
@@ -32,10 +38,5 @@ class ReadFragment : Fragment() {
         viewModel.readBooks.observe(viewLifecycleOwner) { adapter.submitList(it) }
 
         return view
-    }
-
-    private fun toggleStatus(book: Book) {
-        val updated = book.copy(isRead = !book.isRead)
-        viewModel.updateBook(updated)
     }
 }

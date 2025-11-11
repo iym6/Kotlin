@@ -12,7 +12,13 @@
     <string name="cancel">Отмена</string>
     <string name="scan_isbn">Сканировать ISBN</string>
     <string name="description">Описание</string>
-    <string name="pages">Количество страниц</string>
+    <string name="pages">Количество страниц:</string>
     <string name="publisher">Издательство</string>
-
+    <string name="rating">Оценка</string>
+    <string name="pages_read">Прочитано страниц</string>
+    <string name="enter_pages">Введите число</string>
+    <string name="all">Все</string>
+    <string name="review">Отзыв</string>
+    <string name="your_review">Поделитесь впечатлениями...</string>
+    <string name="mark_as_read">Отметить как прочитанную</string>
 </resources>

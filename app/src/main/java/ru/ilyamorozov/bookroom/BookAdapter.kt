@@ -12,7 +12,8 @@ import com.bumptech.glide.Glide
 
 class BookAdapter(
     private val onStatusClick: (Book) -> Unit,
-    private val onEditClick: (Book) -> Unit
+    private val onEditClick: (Book) -> Unit,
+    private val onItemClick: (Book) -> Unit
 ) : ListAdapter<Book, BookAdapter.BookViewHolder>(BookDiffCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BookViewHolder {
@@ -37,7 +38,7 @@ class BookAdapter(
             title.text = book.title
             author.text = book.author
 
-            // Обложка
+            // --- Обложка ---
             if (!book.coverUrl.isNullOrBlank()) {
                 Glide.with(itemView.context)
                     .load(book.coverUrl)
@@ -47,12 +48,21 @@ class BookAdapter(
                 imgCover.setImageResource(R.drawable.ic_book_placeholder)
             }
 
-            // Клик по обложке — загрузка изображения (позже)
+            // --- Клик по обложке → отметить прочитанной ---
             imgCover.setOnClickListener {
-                // TODO: Открыть выбор изображения
+                onStatusClick(book)
             }
 
-            // Рейтинг — только для прочитанных
+            // --- Клик по всей строке → просмотр отзыва (только если прочитана) ---
+            itemView.setOnClickListener {
+                if (book.isRead) {
+                    onItemClick(book)
+                } else {
+                    onStatusClick(book)
+                }
+            }
+
+            // --- Рейтинг (только для прочитанных) ---
             if (book.isRead && book.rating != null) {
                 layoutRating.visibility = View.VISIBLE
                 tvRating.text = String.format("%.1f", book.rating)
@@ -60,7 +70,10 @@ class BookAdapter(
                 layoutRating.visibility = View.GONE
             }
 
-            editIcon.setOnClickListener { onEditClick(book) }
+            // --- Редактирование ---
+            editIcon.setOnClickListener {
+                onEditClick(book)
+            }
         }
     }
 }

@@ -23,16 +23,12 @@ import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
-
     //  ViewModel, диалог-обложка и view-диалога
-
     private lateinit var viewModel: BookViewModel
     private var currentBookCoverUri: String? = null          // URL/URI обложки
     private var currentDialogView: View? = null              // view открытого диалога
 
-
     //  ActivityResult-лаунчеры
-
     private val isbnScanLauncher = registerForActivityResult(ScanContract()) { result ->
         if (result.contents != null) {
             fetchBookByIsbn(result.contents)
@@ -59,14 +55,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-
     //  Retrofit-сервис (Google Books)
-
     private val apiService = ApiService.create()
 
-
     //  onCreate – вкладки + FAB
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -92,9 +84,7 @@ class MainActivity : AppCompatActivity() {
         btnAddBook.setOnClickListener { showAddBookDialog() }
     }
 
-
     //  Диалог добавления / редактирования книги
-
     fun showAddBookDialog(book: Book? = null) {
         val builder = AlertDialog.Builder(this)
         val view = LayoutInflater.from(this).inflate(R.layout.dialog_add_book, null)
@@ -110,7 +100,7 @@ class MainActivity : AppCompatActivity() {
         val etDescription = view.findViewById<TextInputEditText>(R.id.et_description)
         val btnScanIsbn = view.findViewById<Button>(R.id.btn_scan_isbn)
 
-        // ------------------- Заполнение при редактировании -------------------
+        // ------------------- Заполнение при редактировании
         currentBookCoverUri = book?.coverUrl
         book?.let {
             etAuthor.setText(it.author)
@@ -242,5 +232,103 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this@MainActivity, "Ошибка: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
+    }
+    fun showMarkAsReadDialog(book: Book) {
+        val builder = AlertDialog.Builder(this)
+        val view = LayoutInflater.from(this).inflate(R.layout.dialog_mark_read, null)
+        builder.setView(view)
+
+        val sliderRating = view.findViewById<com.google.android.material.slider.Slider>(R.id.slider_rating)
+        val tvRatingValue = view.findViewById<TextView>(R.id.tv_rating_value)
+        val etPagesRead = view.findViewById<EditText>(R.id.et_pages_read)
+        val cbAllPages = view.findViewById<CheckBox>(R.id.cb_all_pages)
+        val etReview = view.findViewById<TextInputEditText>(R.id.et_review)
+        android.util.Log.d("BookApp", "Открыт диалог для книги: ${book.title}")
+        // Инициализация
+        sliderRating.value = book.rating?.toFloat() ?: 5.0f
+        tvRatingValue.text = String.format("%.1f", sliderRating.value)
+
+        // Обновление текста при движении слайдера
+        sliderRating.addOnChangeListener { _, value, _ ->
+            tvRatingValue.text = String.format("%.1f", value)
+        }
+
+        // --- Страницы: ПУСТО, чекбокс ВЫКЛЮЧЕН ---
+        etPagesRead.setText("")  // ← Всегда пусто при открытии
+        cbAllPages.isChecked = false  // ← Выключен
+
+        // --- Логика чекбокса ---
+        val totalPages = book.pageCount
+        cbAllPages.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked && totalPages != null) {
+                etPagesRead.setText(totalPages.toString())
+                etPagesRead.isEnabled = false  // Блокируем редактирование
+            } else {
+                etPagesRead.setText("")  // Очищаем
+                etPagesRead.isEnabled = true
+                etPagesRead.requestFocus()
+            }
+        }
+
+        // Отзыв
+        etReview.setText(book.review ?: "")
+
+        builder.setTitle(getString(R.string.mark_as_read))
+
+        builder.setPositiveButton("Отметить") { _, _ ->
+            val rating = sliderRating.value.toDouble().takeIf { it > 0 }?.toFloat()
+            val pagesReadStr = etPagesRead.text.toString().trim()
+            val pagesRead = if (pagesReadStr.isBlank()) null else pagesReadStr.toIntOrNull()
+            if (pagesRead != null && totalPages != null && pagesRead > totalPages) {
+                Toast.makeText(
+                    this,
+                    "В книге всего $totalPages страниц",
+                    Toast.LENGTH_LONG
+                ).show()
+                return@setPositiveButton  // Не сохраняем, не закрываем
+            }
+            val updatedBook = book.copy(
+                isRead = true,
+                rating = rating,
+                pagesRead = pagesRead,
+                review = etReview.text.toString().trim().takeIf { it.isNotBlank() }
+            )
+
+            viewModel.updateBook(updatedBook)
+        }
+
+        builder.setNegativeButton("Отмена", null)
+        builder.show()
+    }
+
+    fun showReviewDialog(book: Book) {
+        val builder = AlertDialog.Builder(this)
+        val view = LayoutInflater.from(this).inflate(R.layout.dialog_review, null)
+        builder.setView(view)
+
+        val imgCover = view.findViewById<ImageView>(R.id.img_cover)
+        val tvTitle = view.findViewById<TextView>(R.id.tv_title)
+        val tvAuthor = view.findViewById<TextView>(R.id.tv_author)
+        val tvRating = view.findViewById<TextView>(R.id.tv_rating)
+        val tvPages = view.findViewById<TextView>(R.id.tv_pages)
+        val tvReview = view.findViewById<TextView>(R.id.tv_review)
+
+        // Заполнение
+        if (!book.coverUrl.isNullOrBlank()) {
+            Glide.with(this).load(book.coverUrl).placeholder(R.drawable.ic_book_placeholder).into(imgCover)
+        } else {
+            imgCover.setImageResource(R.drawable.ic_book_placeholder)
+        }
+
+        tvTitle.text = book.title
+        tvAuthor.text = "Автор: ${book.author}"
+        tvRating.text = "Оценка: ${book.rating?.let { String.format("%.1f", it) } ?: "—"}"
+        tvPages.text = "Прочитано: ${book.pagesRead ?: book.pageCount ?: "—"} страниц"
+
+        tvReview.text = book.review?.takeIf { it.isNotBlank() } ?: "Отзыв отсутствует"
+
+        builder.setTitle("Отзыв о книге")
+        builder.setPositiveButton("Закрыть", null)
+        builder.show()
     }
 }
