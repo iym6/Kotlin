@@ -10,4 +10,9 @@
     <string name="save">Сохранить</string>
     <string name="delete">Удалить</string>
     <string name="cancel">Отмена</string>
+    <string name="scan_isbn">Сканировать ISBN</string>
+    <string name="description">Описание</string>
+    <string name="pages">Количество страниц</string>
+    <string name="publisher">Издательство</string>
+
 </resources>

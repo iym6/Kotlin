@@ -9,16 +9,12 @@ class BookViewModel(application: android.app.Application) : ViewModel() {
     private val repository: BookRepository
 
     init {
-        try {
-            val db = AppDatabase.getDatabase(application)
-            repository = BookRepository(db.bookDao())
-        } catch (e: Exception) {
-            throw RuntimeException("Failed to initialize database: ${e.message}", e)
-        }
+        val db = AppDatabase.getDatabase(application)
+        repository = BookRepository(db.bookDao())
     }
 
-    val newBooks: LiveData<List<Book>> get() = repository.getNewBooks()
-    val readBooks: LiveData<List<Book>> get() = repository.getReadBooks()
+    val newBooks: LiveData<List<Book>> = repository.getNewBooks()
+    val readBooks: LiveData<List<Book>> = repository.getReadBooks()
 
     fun addBook(book: Book) = viewModelScope.launch {
         repository.insert(book)

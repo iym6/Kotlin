@@ -1,85 +1,176 @@
 package ru.ilyamorozov.bookroom
 
-import android.app.AlertDialog
+import android.Manifest
+import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
-import android.widget.CheckBox
-import android.widget.EditText
+import android.view.View
+import android.widget.*
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
+import androidx.lifecycle.lifecycleScope
+import com.bumptech.glide.Glide
+import com.google.android.material.tabs.TabLayout
+import com.google.android.material.tabs.TabLayoutMediator
+import com.google.android.material.textfield.TextInputEditText
+import com.journeyapps.barcodescanner.ScanContract
+import com.journeyapps.barcodescanner.ScanOptions
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
+
+    //  ViewModel, диалог-обложка и view-диалога
+
     private lateinit var viewModel: BookViewModel
-    private lateinit var adapterNew: BookAdapter
-    private lateinit var adapterRead: BookAdapter
+    private var currentBookCoverUri: String? = null          // URL/URI обложки
+    private var currentDialogView: View? = null              // view открытого диалога
+
+
+    //  ActivityResult-лаунчеры
+
+    private val isbnScanLauncher = registerForActivityResult(ScanContract()) { result ->
+        if (result.contents != null) {
+            fetchBookByIsbn(result.contents)
+        } else {
+            Toast.makeText(this, "Сканирование отменено", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) startIsbnScanner()
+        else Toast.makeText(this, "Камера обязательна", Toast.LENGTH_LONG).show()
+    }
+
+    private val pickImageLauncher = registerForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            currentBookCoverUri = it.toString()
+            currentDialogView?.findViewById<ImageView>(R.id.img_cover)?.let { img ->
+                Glide.with(this).load(it).placeholder(R.drawable.ic_book_placeholder).into(img)
+            }
+        }
+    }
+
+
+    //  Retrofit-сервис (Google Books)
+
+    private val apiService = ApiService.create()
+
+
+    //  onCreate – вкладки + FAB
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val recyclerNew = findViewById<RecyclerView>(R.id.recycler_new_books)
-        val recyclerRead = findViewById<RecyclerView>(R.id.recycler_read_books)
-        val btnAddBook = findViewById<com.google.android.material.floatingactionbutton.FloatingActionButton>(R.id.btn_add_book)
-
         val factory = BookViewModelFactory(application)
         viewModel = ViewModelProvider(this, factory)[BookViewModel::class.java]
 
-        adapterNew = BookAdapter(
-            onStatusClick = { toggleStatus(it) },
-            onEditClick = { showAddBookDialog(it) }
-        )
-        adapterRead = BookAdapter(
-            onStatusClick = { toggleStatus(it) },
-            onEditClick = { showAddBookDialog(it) }
-        )
+        val viewPager = findViewById<androidx.viewpager2.widget.ViewPager2>(R.id.view_pager)
+        val tabLayout = findViewById<TabLayout>(R.id.tab_layout)
+        val btnAddBook =
+            findViewById<com.google.android.material.floatingactionbutton.FloatingActionButton>(R.id.btn_add_book)
 
-        recyclerNew.layoutManager = LinearLayoutManager(this)
-        recyclerNew.adapter = adapterNew
+        viewPager.adapter = ViewPagerAdapter(this)
 
-        recyclerRead.layoutManager = LinearLayoutManager(this)
-        recyclerRead.adapter = adapterRead
+        TabLayoutMediator(tabLayout, viewPager) { tab, position ->
+            tab.text = when (position) {
+                0 -> getString(R.string.New)   // "Хочу прочитать"
+                1 -> getString(R.string.Read)  // "Прочитанные"
+                else -> null
+            }
+        }.attach()
 
         btnAddBook.setOnClickListener { showAddBookDialog() }
-
-        viewModel.newBooks.observe(this) { adapterNew.submitList(it) }
-        viewModel.readBooks.observe(this) { adapterRead.submitList(it) }
     }
 
-    private fun showAddBookDialog(book: Book? = null) {
+
+    //  Диалог добавления / редактирования книги
+
+    fun showAddBookDialog(book: Book? = null) {
         val builder = AlertDialog.Builder(this)
         val view = LayoutInflater.from(this).inflate(R.layout.dialog_add_book, null)
+        currentDialogView = view                     // <-- сохраняем view
         builder.setView(view)
 
-        val editTextAuthor = view.findViewById<EditText>(R.id.editTextAuthor)
-        val editTextTitle = view.findViewById<EditText>(R.id.editTextTitle)
-        val checkBoxStatus = view.findViewById<CheckBox>(R.id.checkBoxStatus)
+        // ------------------- Views -------------------
+        val imgCover = view.findViewById<ImageView>(R.id.img_cover)
+        val etAuthor = view.findViewById<TextInputEditText>(R.id.et_author)
+        val etTitle = view.findViewById<TextInputEditText>(R.id.et_title)
+        val etPublisher = view.findViewById<TextInputEditText>(R.id.et_publisher)
+        val etPages = view.findViewById<TextInputEditText>(R.id.et_pages)
+        val etDescription = view.findViewById<TextInputEditText>(R.id.et_description)
+        val btnScanIsbn = view.findViewById<Button>(R.id.btn_scan_isbn)
 
+        // ------------------- Заполнение при редактировании -------------------
+        currentBookCoverUri = book?.coverUrl
         book?.let {
-            editTextAuthor.setText(it.author)
-            editTextTitle.setText(it.title)
-            checkBoxStatus.isChecked = it.status == 1
+            etAuthor.setText(it.author)
+            etTitle.setText(it.title)
+            etPublisher.setText(it.publisher)
+            etPages.setText(it.pageCount?.toString() ?: "")
+            etDescription.setText(it.description)
+            if (!it.coverUrl.isNullOrBlank()) {
+                Glide.with(this).load(it.coverUrl)
+                    .placeholder(R.drawable.ic_book_placeholder)
+                    .into(imgCover)
+            }
         }
 
+        // ------------------- Клик по обложке -------------------
+        imgCover.setOnClickListener {
+            pickImageLauncher.launch("image/*")
+        }
+
+        // ------------------- Сканирование ISBN -------------------
+        btnScanIsbn.setOnClickListener {
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.CAMERA
+                ) == PackageManager.PERMISSION_GRANTED
+            ) {
+                startIsbnScanner()
+            } else {
+                requestPermissionLauncher.launch(Manifest.permission.CAMERA)
+            }
+        }
+
+        // ------------------- Кнопки диалога -------------------
         builder.setTitle(if (book == null) getString(R.string.addBook) else getString(R.string.editBook))
 
         builder.setPositiveButton(getString(R.string.save)) { _, _ ->
-            val author = editTextAuthor.text.toString().trim()
-            val title = editTextTitle.text.toString().trim()
-            val status = if (checkBoxStatus.isChecked) 1 else 0
-
-            if (author.isNotEmpty() && title.isNotEmpty()) {
-                val newBook = book?.copy(author = author, title = title, status = status)
-                    ?: Book(author = author, title = title, status = status)
-
-                if (book == null) {
-                    viewModel.addBook(newBook)
-                } else {
-                    viewModel.updateBook(newBook)
-                }
+            val author = etAuthor.text.toString().trim()
+            val title = etTitle.text.toString().trim()
+            if (author.isBlank() || title.isBlank()) {
+                Toast.makeText(this, "Автор и Название обязательны", Toast.LENGTH_SHORT).show()
+                return@setPositiveButton
             }
+
+            val newBook = book?.copy(
+                author = author,
+                title = title,
+                publisher = etPublisher.text.toString().trim().takeIf { it.isNotBlank() },
+                pageCount = etPages.text.toString().toIntOrNull(),
+                description = etDescription.text.toString().trim().takeIf { it.isNotBlank() },
+                coverUrl = currentBookCoverUri
+            ) ?: Book(
+                author = author,
+                title = title,
+                publisher = etPublisher.text.toString().trim().takeIf { it.isNotBlank() },
+                pageCount = etPages.text.toString().toIntOrNull(),
+                description = etDescription.text.toString().trim().takeIf { it.isNotBlank() },
+                coverUrl = currentBookCoverUri
+            )
+
+            if (book == null) viewModel.addBook(newBook) else viewModel.updateBook(newBook)
         }
 
         if (book != null) {
@@ -90,11 +181,66 @@ class MainActivity : AppCompatActivity() {
             builder.setNegativeButton(getString(R.string.cancel), null)
         }
 
-        builder.show()
+        // ------------------- Очистка при закрытии -------------------
+        val dialog = builder.show()
+        dialog.setOnDismissListener {
+            currentDialogView = null
+            currentBookCoverUri = null
+        }
     }
 
-    private fun toggleStatus(book: Book) {
-        val updated = book.copy(status = if (book.status == 0) 1 else 0)
-        viewModel.updateBook(updated)
+
+    //  Сканер ISBN
+
+    private fun startIsbnScanner() {
+        val options = ScanOptions().apply {
+            setDesiredBarcodeFormats("EAN_13", "EAN_8")
+            setPrompt("Наведите камеру на ISBN")
+            setBeepEnabled(true)
+            setOrientationLocked(true)
+        }
+        isbnScanLauncher.launch(options)
+    }
+
+
+    //  Запрос книги по ISBN (Google Books)
+
+    private fun fetchBookByIsbn(isbn: String) {
+        val cleanIsbn = isbn.replace("-", "").replace(" ", "").trim()
+        if (cleanIsbn.isEmpty()) return
+
+        lifecycleScope.launch {
+            try {
+                val response = apiService.getBookGoogle("isbn:$cleanIsbn")
+                val bookInfo = response.items?.firstOrNull()?.volumeInfo
+
+                if (bookInfo != null) {
+                    currentDialogView?.let { v ->
+                        v.findViewById<TextInputEditText>(R.id.et_title)?.setText(bookInfo.title ?: "")
+                        v.findViewById<TextInputEditText>(R.id.et_author)
+                            ?.setText(bookInfo.authors?.joinToString(", ") ?: "")
+                        v.findViewById<TextInputEditText>(R.id.et_publisher)
+                            ?.setText(bookInfo.publisher ?: "")
+                        v.findViewById<TextInputEditText>(R.id.et_pages)
+                            ?.setText(bookInfo.pageCount?.toString() ?: "")
+                        v.findViewById<TextInputEditText>(R.id.et_description)
+                            ?.setText(bookInfo.description ?: "")
+
+                        val thumb = bookInfo.imageLinks?.thumbnail?.replace("http://", "https://")
+                        if (thumb != null) {
+                            currentBookCoverUri = thumb
+                            Glide.with(this@MainActivity)
+                                .load(thumb)
+                                .placeholder(R.drawable.ic_book_placeholder)
+                                .into(v.findViewById(R.id.img_cover))
+                        }
+                    } ?: Toast.makeText(this@MainActivity, "Диалог не найден", Toast.LENGTH_LONG).show()
+                } else {
+                    Toast.makeText(this@MainActivity, "Книга не найдена", Toast.LENGTH_LONG).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(this@MainActivity, "Ошибка: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
     }
 }

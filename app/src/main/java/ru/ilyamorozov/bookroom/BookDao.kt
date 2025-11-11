@@ -9,10 +9,10 @@ import androidx.lifecycle.LiveData
 
 @Dao
 interface BookDao {
-    @Query("SELECT * FROM books WHERE status = 0 ORDER BY id ASC ")
+    @Query("SELECT * FROM books WHERE isRead = 0 ORDER BY id ASC")
     fun getNewBooks(): LiveData<List<Book>>
 
-    @Query("SELECT * FROM books WHERE status = 1 ORDER BY id DESC")
+    @Query("SELECT * FROM books WHERE isRead = 1 ORDER BY id DESC")
     fun getReadBooks(): LiveData<List<Book>>
 
     @Insert
