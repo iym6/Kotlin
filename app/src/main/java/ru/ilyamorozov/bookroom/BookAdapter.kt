@@ -1,5 +1,6 @@
 package ru.ilyamorozov.bookroom
 
+import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -9,6 +10,7 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import java.io.File
 
 class BookAdapter(
     private val onStatusClick: (Book) -> Unit,
@@ -33,17 +35,36 @@ class BookAdapter(
         private val layoutRating: View = itemView.findViewById(R.id.layout_rating)
         private val tvRating: TextView = itemView.findViewById(R.id.tv_rating)
         private val editIcon: ImageView = itemView.findViewById(R.id.edit_icon)
-
+        private fun loadCoverSmart(imageView: ImageView, coverPath: String) {
+            // Проверяем: это файл или URL?
+            if (coverPath.startsWith("http://") || coverPath.startsWith("https://")) {
+                // Это URL от Google Books
+                Glide.with(imageView.context)
+                    .load(coverPath)
+                    .placeholder(R.drawable.ic_book_placeholder)
+                    .into(imageView)
+            } else {
+                // Это локальный файл
+                val file = File(coverPath)
+                if (file.exists()) {
+                    Glide.with(imageView.context)
+                        .load(file)
+                        .placeholder(R.drawable.ic_book_placeholder)
+                        .into(imageView)
+                } else {
+                    // Файл удалён — fallback на placeholder
+                    imageView.setImageResource(R.drawable.ic_book_placeholder)
+                }
+            }
+        }
+        @SuppressLint("CheckResult", "DefaultLocale")
         fun bind(book: Book) {
             title.text = book.title
             author.text = book.author
 
             // --- Обложка ---
             if (!book.coverUrl.isNullOrBlank()) {
-                Glide.with(itemView.context)
-                    .load(book.coverUrl)
-                    .placeholder(R.drawable.ic_book_placeholder)
-                    .into(imgCover)
+                loadCoverSmart(imgCover, book.coverUrl!!)
             } else {
                 imgCover.setImageResource(R.drawable.ic_book_placeholder)
             }
