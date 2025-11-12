@@ -67,7 +67,6 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
         val factory = BookViewModelFactory(application)
         viewModel = ViewModelProvider(this, factory)[BookViewModel::class.java]
 
