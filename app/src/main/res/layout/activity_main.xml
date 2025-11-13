@@ -5,7 +5,8 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="16dp"
-    android:background="@drawable/dark_wood_texture">
+    android:background="@drawable/library_very_good"
+    android:id="@+id/root_layout">
 
     <com.google.android.material.tabs.TabLayout
         android:id="@+id/tab_layout"

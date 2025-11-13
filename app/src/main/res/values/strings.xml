@@ -20,8 +20,8 @@
     <string name="enter_pages">Введите число</string>
     <string name="all">Все</string>
     <string name="review">Отзыв</string>
-    <string name="your_review">Поделитесь впечатлениями...</string>
-    <string name="mark_as_read">Отметить как прочитанную</string>
+    <string name="your_review">Поделитесь впечатлениями…</string>
+    <string name="mark_as_read">Отметить прочитанной</string>
     <string name="scan_cancelled">Сканирование отменено</string>
     <string name="camera_required">Камера обязательна</string>
     <string name="cover_save_failed">Не удалось сохранить обложку</string>
@@ -42,8 +42,7 @@
     <string name="no_reading_info">Информация о чтении отсутствует</string>
     <string name="no_review">Отзыв отсутствует</string>
     <string name="close">Закрыть</string>
-    <string name="start_reading">Отметить "Читаю сейчас"</string>
-    <string name="edit_book">Отредактировать книгу</string>
-    <string name="return_to_want_to_read">Вернуть в "Хочу прочитать"</string>
-    <string name="return_to_currently_reading">Вернуть в "Читаю сейчас"</string>
+    <string name="return_to_want_to_read">Вернуть в «Хочу прочитать»</string>
+    <string name="return_to_currently_reading">Вернуть в «Читаю сейчас»</string>
+    <string name="start_read">Начать читать</string>
 </resources>

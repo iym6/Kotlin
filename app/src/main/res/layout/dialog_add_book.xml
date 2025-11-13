@@ -3,14 +3,13 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:padding="16dp"
-    android:background="@drawable/dark">
+    android:background="@drawable/library3">
 
     <LinearLayout
         android:id="@+id/dialog_add_book_root"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical">
-
         <!-- Обложка -->
         <ImageView
             android:id="@+id/img_cover"
@@ -106,8 +105,39 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/scan_isbn"
+            android:textColor="@color/white"
             android:layout_marginBottom="16dp"
             style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="end">
 
+            <Button
+                android:id="@+id/btn_delete"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/delete"
+                android:textColor="#D32F2F"
+                android:visibility="gone"
+                style="@style/Widget.MaterialComponents.Button.TextButton" />
+
+            <Button
+                android:id="@+id/btn_cancel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/cancel"
+                android:textColor="@color/white"
+                style="@style/Widget.MaterialComponents.Button.TextButton" />
+
+            <Button
+                android:id="@+id/btn_save"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/save"
+                android:textColor="#FFD700"
+                style="@style/Widget.MaterialComponents.Button.TextButton" />
+        </LinearLayout>
     </LinearLayout>
 </ScrollView>

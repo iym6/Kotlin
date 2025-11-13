@@ -4,10 +4,14 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.app.DatePickerDialog
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
+import android.view.Gravity
 import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -25,6 +29,7 @@ import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
 import java.util.Calendar
+import androidx.core.graphics.drawable.toDrawable
 
 class MainActivity : AppCompatActivity() {
 
@@ -89,13 +94,15 @@ class MainActivity : AppCompatActivity() {
         btnAddBook.setOnClickListener { showAddBookDialog() }
     }
 
-    //ДИАЛОГ ДОБАВЛЕНИЯ / РЕДАКТИРОВАНИЯ
+    //Диалог добавления/редактирования
     fun showAddBookDialog(book: Book? = null) {
-        val builder = AlertDialog.Builder(this)
         val view = LayoutInflater.from(this).inflate(R.layout.dialog_add_book, null)
-        builder.setView(view)
+        val dialog = AlertDialog.Builder(this, R.style.CustomAlertDialog)
+            .setView(view)
+            .setCancelable(true)
+            .create()
 
-        //Views
+        // Views
         val imgCover = view.findViewById<ImageView>(R.id.img_cover)
         val etAuthor = view.findViewById<TextInputEditText>(R.id.et_author)
         val etTitle = view.findViewById<TextInputEditText>(R.id.et_title)
@@ -103,8 +110,15 @@ class MainActivity : AppCompatActivity() {
         val etPages = view.findViewById<TextInputEditText>(R.id.et_pages)
         val etDescription = view.findViewById<TextInputEditText>(R.id.et_description)
         val btnScanIsbn = view.findViewById<Button>(R.id.btn_scan_isbn)
+        val btnSave = view.findViewById<Button>(R.id.btn_save)
+        val btnCancel = view.findViewById<Button>(R.id.btn_cancel)
+        val btnDelete = view.findViewById<Button>(R.id.btn_delete)
 
-        //Заполнение при редактировании
+        // Показать кнопку "Удалить" только при редактировании
+        btnDelete.visibility = if (book != null) View.VISIBLE else View.GONE
+        btnScanIsbn.visibility = if (book != null) View.INVISIBLE else View.VISIBLE
+
+        // Заполнение полей
         currentBookCoverPath = book?.coverUrl
         book?.let {
             etAuthor.setText(it.author)
@@ -115,12 +129,12 @@ class MainActivity : AppCompatActivity() {
             loadCoverIntoImageView(imgCover, it.coverUrl)
         }
 
-        //Клик по обложке
+        // Клик по обложке
         imgCover.setOnClickListener {
             pickImageLauncher.launch("image/*")
         }
 
-        //Сканирование ISBN
+        // Сканирование ISBN
         btnScanIsbn.setOnClickListener {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
                 == PackageManager.PERMISSION_GRANTED
@@ -131,15 +145,14 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        //Кнопки
-        builder.setTitle(if (book == null) getString(R.string.addBook) else getString(R.string.editBook))
-
-        builder.setPositiveButton(getString(R.string.save)) { _, _ ->
+        // Кнопка "Сохранить"
+        btnSave.setOnClickListener {
             val author = etAuthor.text.toString().trim()
             val title = etTitle.text.toString().trim()
+
             if (author.isBlank() || title.isBlank()) {
                 Toast.makeText(this, getString(R.string.author_title_required), Toast.LENGTH_SHORT).show()
-                return@setPositiveButton
+                return@setOnClickListener
             }
 
             val newBook = book?.copy(
@@ -158,29 +171,41 @@ class MainActivity : AppCompatActivity() {
                 coverUrl = currentBookCoverPath
             )
 
-            if (book == null) viewModel.addBook(newBook) else viewModel.updateBook(newBook)
-        }
-
-        if (book != null) {
-            builder.setNegativeButton(getString(R.string.delete)) { _, _ ->
-                deleteCoverIfLocal(book.coverUrl)  // ← Удаляем файл
-                viewModel.deleteBook(book)
+            if (book == null) {
+                viewModel.addBook(newBook)
+            } else {
+                viewModel.updateBook(newBook)
             }
-        } else {
-            builder.setNegativeButton(getString(R.string.cancel), null)
+
+            dialog.dismiss()
         }
 
-        //Показ и очистка
-        currentAddBookDialog = builder.create()
-        currentAddBookDialog?.show()
+        // Кнопка "Удалить"
+        btnDelete.setOnClickListener {
+            book?.let {
+                deleteCoverIfLocal(it.coverUrl)
+                viewModel.deleteBook(it)
+            }
+            dialog.dismiss()
+        }
 
-        currentAddBookDialog?.setOnDismissListener {
+        // Кнопка "Отмена"
+        btnCancel.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        // Показать диалог
+        currentAddBookDialog = dialog
+        dialog.show()
+
+        // Очистка при закрытии
+        dialog.setOnDismissListener {
             currentAddBookDialog = null
             currentBookCoverPath = null
         }
     }
 
-    //СКАНИРОВАНИЕ
+    //Сканирование
     private fun startIsbnScanner() {
         val options = ScanOptions().apply {
             setDesiredBarcodeFormats("EAN_13", "EAN_8")
@@ -191,7 +216,7 @@ class MainActivity : AppCompatActivity() {
         isbnScanLauncher.launch(options)
     }
 
-    //ПОИСК ПО ISBN
+    //Поиск по ISBN
     private fun fetchBookByIsbn(isbn: String) {
         val cleanIsbn = isbn.replace("-", "").replace(" ", "").trim()
         if (cleanIsbn.isEmpty()) return
@@ -228,7 +253,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    //КОПИРОВАНИЕ ОБЛОЖКИ ВО ВНУТРЕННЕЕ ХРАНИЛИЩЕ
+    //Копирование во внутренее хранилище
     private fun copyImageToInternalStorage(uri: Uri): String? {
         return try {
             val fileName = "cover_${System.currentTimeMillis()}.jpg"
@@ -248,7 +273,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    //УДАЛЕНИЕ ЛОКАЛЬНОЙ ОБЛОЖКИ
+    //Удаление локальной обложки
     private fun deleteCoverIfLocal(coverPath: String?) {
         coverPath?.let { path ->
             if (path.startsWith(filesDir.absolutePath)) {
@@ -257,7 +282,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    //ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ДЛЯ ОБЛОЖКИ
+    //Вспомогательные функции
     private fun updateCoverImageInDialog(coverPath: String) {
         currentAddBookDialog?.let { dialog ->
             val root = dialog.findViewById<LinearLayout>(R.id.dialog_add_book_root) ?: return@let
@@ -288,7 +313,8 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
-    //ОТМЕТКА "ЧИТАЮ СЕЙЧАС"
+
+    //"Читаю сейчас"
     private val todayMillis: Long
         get() = System.currentTimeMillis()
     fun showStartReadingDialog(book: Book) {
@@ -319,13 +345,19 @@ class MainActivity : AppCompatActivity() {
         datePicker.datePicker.maxDate = todayMillis
         datePicker.show()
     }
-    //ОТМЕТКА "ПРОЧИТАНО"
-    @SuppressLint("DefaultLocale")
     fun showMarkAsReadDialog(book: Book) {
-        val builder = AlertDialog.Builder(this)
+        showReviewEditDialog(book, showDatePicker = true)
+    }
+    private fun showReviewEditDialog(
+        book: Book,
+        showDatePicker: Boolean = true,
+        onSave: (Book) -> Unit = { viewModel.updateBook(it) }
+    ) {
         val view = LayoutInflater.from(this).inflate(R.layout.dialog_mark_read, null)
-        builder.setView(view)
-
+        val dialog = AlertDialog.Builder(this, R.style.CustomAlertDialog)
+            .setView(view)
+            .setCancelable(true)
+            .create()
 
         val customSliderLayout = view.findViewById<FrameLayout>(R.id.custom_rating_slider)
         val slider = customSliderLayout.findViewById<com.google.android.material.slider.Slider>(R.id.slider)
@@ -334,8 +366,9 @@ class MainActivity : AppCompatActivity() {
         val cbAllPages = view.findViewById<CheckBox>(R.id.cb_all_pages)
         val etReview = view.findViewById<TextInputEditText>(R.id.et_review)
         val tvRatingValue = view.findViewById<TextView>(R.id.tv_rating_value)
+        val btnClose = view.findViewById<Button>(R.id.btn_close)
+        val btnMark = view.findViewById<Button>(R.id.btn_mark)
 
-        // Инициализация
         slider.value = book.rating ?: 5.0f
         tvRatingValue.text = String.format("%.1f", slider.value)
         starsView.setRating(slider.value)
@@ -345,31 +378,36 @@ class MainActivity : AppCompatActivity() {
             tvRatingValue.text = String.format("%.1f", value)
         }
 
-        etPagesRead.setText("")
-        cbAllPages.isChecked = false
+        etPagesRead.setText(book.pagesRead?.toString() ?: "")
 
-        val totalPages = book.pageCount
+        // Автозаполнение: если прочитано всё — чекбокс включён
+        val isAllRead = book.pageCount?.let { book.pagesRead == it } == true
+        cbAllPages.isChecked = isAllRead
+        etPagesRead.isEnabled = !isAllRead
+
         cbAllPages.setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked && totalPages != null) {
-                etPagesRead.setText(totalPages.toString())
+            if (isChecked && book.pageCount != null) {
+                etPagesRead.setText(book.pageCount.toString())
                 etPagesRead.isEnabled = false
             } else {
-                etPagesRead.setText("")
+                etPagesRead.setText(book.pagesRead?.toString() ?: "")
                 etPagesRead.isEnabled = true
                 etPagesRead.requestFocus()
             }
         }
 
         etReview.setText(book.review ?: "")
-        builder.setTitle(getString(R.string.mark_as_read))
-        builder.setPositiveButton(getString(R.string.mark)) { _, _ ->
+
+        btnClose.setOnClickListener { dialog.dismiss() }
+
+        btnMark.setOnClickListener {
             val rating = slider.value.takeIf { it > 0 }?.toFloat()
             val pagesReadStr = etPagesRead.text.toString().trim()
             val pagesRead = if (pagesReadStr.isBlank()) null else pagesReadStr.toIntOrNull()
 
             if (pagesRead == null && !cbAllPages.isChecked) {
                 Toast.makeText(this, getString(R.string.pages_required), Toast.LENGTH_LONG).show()
-                return@setPositiveButton
+                return@setOnClickListener
             }
 
             val finalPagesRead = if (cbAllPages.isChecked && book.pageCount != null) {
@@ -380,59 +418,63 @@ class MainActivity : AppCompatActivity() {
 
             if (finalPagesRead != null && book.pageCount != null && finalPagesRead > book.pageCount) {
                 Toast.makeText(this, getString(R.string.pages_exceed_total) + "${book.pageCount}", Toast.LENGTH_LONG).show()
-                return@setPositiveButton
+                return@setOnClickListener
             }
 
-            Toast.makeText(this, getString(R.string.select_end_date), Toast.LENGTH_LONG).show()
+            if (showDatePicker && !book.isRead) {
+                // === Отмечаем как прочитанную ===
+                val calendar = Calendar.getInstance()
+                val datePicker = DatePickerDialog(this, { _, y, m, d ->
+                    val endMillis = Calendar.getInstance().apply { set(y, m, d) }.timeInMillis
 
-            val calendar = Calendar.getInstance()
-            val year = calendar.get(Calendar.YEAR)
-            val month = calendar.get(Calendar.MONTH)
-            val day = calendar.get(Calendar.DAY_OF_MONTH)
+                    if (endMillis > System.currentTimeMillis()) {
+                        Toast.makeText(this, getString(R.string.date_in_future), Toast.LENGTH_SHORT).show()
+                        return@DatePickerDialog
+                    }
+                    if (book.startDate != null && endMillis < book.startDate) {
+                        Toast.makeText(this, getString(R.string.end_before_start), Toast.LENGTH_LONG).show()
+                        return@DatePickerDialog
+                    }
 
-            val datePicker = DatePickerDialog(this, { _, y, m, d ->
-                val selectedCalendar = Calendar.getInstance().apply {
-                    set(y, m, d)
-                }
-                val endMillis = selectedCalendar.timeInMillis
+                    val updatedBook = book.copy(
+                        isRead = true,
+                        isCurrentlyReading = false,
+                        rating = rating,
+                        pagesRead = finalPagesRead,
+                        review = etReview.text.toString().trim().takeIf { it.isNotBlank() },
+                        endDate = endMillis
+                    )
+                    onSave(updatedBook)
+                    dialog.dismiss()
+                }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH))
 
-                if (endMillis > todayMillis) {
-                    return@DatePickerDialog
-                }
-
-                if (book.startDate != null && endMillis < book.startDate) {
-                    Toast.makeText(this, getString(R.string.end_before_start), Toast.LENGTH_LONG).show()
-                    return@DatePickerDialog
-                }
-
+                datePicker.setTitle(getString(R.string.end_date_title))
+                datePicker.datePicker.maxDate = System.currentTimeMillis()
+                datePicker.datePicker.minDate = book.startDate ?: 0
+                datePicker.show()
+            } else {
+                //Редактируем без даты
                 val updatedBook = book.copy(
-                    isRead = true,
-                    isCurrentlyReading = false,
                     rating = rating,
                     pagesRead = finalPagesRead,
-                    review = etReview.text.toString().trim().takeIf { it.isNotBlank() },
-                    endDate = endMillis
+                    review = etReview.text.toString().trim().takeIf { it.isNotBlank() }
                 )
-                viewModel.updateBook(updatedBook)
-            }, year, month, day)
-
-            datePicker.setTitle(getString(R.string.end_date_title))
-            datePicker.datePicker.maxDate = todayMillis
-            datePicker.show()
+                onSave(updatedBook)
+                dialog.dismiss()
+            }
         }
 
-
-        builder.setNegativeButton(getString(R.string.close), null)
-        builder.show()
+        dialog.show()
     }
-
-    //ПРОСМОТР ОТЗЫВА
-    @SuppressLint("SetTextI18n", "DefaultLocale")
+    //Просмотр отзыва
     @Suppress("DEPRECATION")
+    @SuppressLint("SetTextI18n", "DefaultLocale")
     fun showReviewDialog(book: Book) {
-        val builder = AlertDialog.Builder(this)
         val view = LayoutInflater.from(this).inflate(R.layout.dialog_review, null)
-        builder.setView(view)
+        val dialog = AlertDialog.Builder(this, R.style.CustomAlertDialog)
+            .setView(view)
+            .setCancelable(true)
+            .create()
 
         val imgCover = view.findViewById<ImageView>(R.id.img_cover)
         val tvTitle = view.findViewById<TextView>(R.id.tv_title)
@@ -441,6 +483,8 @@ class MainActivity : AppCompatActivity() {
         val tvReadingSummary = view.findViewById<TextView>(R.id.tv_reading_summary)
         val tvDateRange = view.findViewById<TextView>(R.id.tv_date_range)
         val tvReview = view.findViewById<TextView>(R.id.tv_review)
+        val btnClose = view.findViewById<Button>(R.id.btn_close)
+        val btnEditReview = view.findViewById<ImageView>(R.id.btn_edit_review)
 
         loadCoverIntoImageView(imgCover, book.coverUrl)
 
@@ -467,8 +511,20 @@ class MainActivity : AppCompatActivity() {
 
         tvReview.text = book.review?.takeIf { it.isNotBlank() } ?: getString(R.string.no_review)
 
-        builder.setPositiveButton(getString(R.string.close), null)
-        builder.show()
+        btnEditReview.setOnClickListener {
+            dialog.dismiss()
+            showReviewEditDialog(
+                book = book,
+                onSave = { updatedBook ->
+                    viewModel.updateBook(updatedBook)
+                    showReviewDialog(updatedBook)
+                },
+                showDatePicker = false
+            )
+        }
+
+        btnClose.setOnClickListener { dialog.dismiss() }
+        dialog.show()
     }
 
     // Склонение: 1 страница, 2 страницы, 5 страниц
@@ -493,40 +549,86 @@ class MainActivity : AppCompatActivity() {
             else -> "дней"
         }
     }
-    fun showQuickViewDialog(book: Book) {
-        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_quick_view, null)
-        val imgCoverBig = dialogView.findViewById<ImageView>(R.id.img_cover_big)
-        val tvTitleBig = dialogView.findViewById<TextView>(R.id.tv_title_big)
-        val tvAuthorBig = dialogView.findViewById<TextView>(R.id.tv_author_big)
-        val tvStatus = dialogView.findViewById<TextView>(R.id.tv_status)
+    private var currentPopup: PopupWindow? = null
+    @SuppressLint("UseKtx")
+    fun showContextMenuPopup(book: Book, anchorView: View) {
+        currentPopup?.dismiss()
 
-        tvTitleBig.text = book.title
-        tvAuthorBig.text = book.author
-        tvStatus.text = when {
-            book.isRead -> "Прочитана"
-            book.isCurrentlyReading -> "Читаю сейчас"
-            else -> "Хочу прочитать"
+        val popupView = LayoutInflater.from(this).inflate(R.layout.dialog_context_menu, null)
+        val popupWindow = PopupWindow(
+            popupView,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            true
+        ).apply {
+            setBackgroundDrawable(Color.TRANSPARENT.toDrawable())
+            elevation = 16f
+            isOutsideTouchable = true
+            animationStyle = android.R.style.Animation_Dialog
         }
 
-        // Загрузка обложки (большая)
-        if (!book.coverUrl.isNullOrBlank()) {
-            if (book.coverUrl!!.startsWith("http")) {
-                Glide.with(this).load(book.coverUrl!!).into(imgCoverBig)
-            } else {
-                val file = File(book.coverUrl!!)
-                if (file.exists()) {
-                    Glide.with(this).load(file).into(imgCoverBig)
-                } else {
-                    imgCoverBig.setImageResource(R.drawable.ic_book_placeholder)
+        val action1 = popupView.findViewById<TextView>(R.id.menu_action_1)
+        val action2 = popupView.findViewById<TextView>(R.id.menu_action_2)
+        val cancel = popupView.findViewById<TextView>(R.id.menu_cancel)
+
+        // Динамика текста
+        when {
+            book.isRead -> {
+                action1.text = getString(R.string.return_to_want_to_read)
+                action2.text = getString(R.string.return_to_currently_reading)
+            }
+            book.isCurrentlyReading -> {
+                action1.text = getString(R.string.mark_as_read)
+                action2.text = getString(R.string.return_to_want_to_read)
+            }
+            else -> {
+                action1.text = getString(R.string.start_read)
+                action2.text = getString(R.string.editBook)
+            }
+        }
+
+        // === ДЕЙСТВИЯ ===
+        action1.setOnClickListener {
+            when {
+                book.isRead -> {
+                    // Вернуть в "Хочу прочитать"
+                    viewModel.updateBook(book.copy(isRead = false, isCurrentlyReading = false))
+                }
+                book.isCurrentlyReading -> {
+                    // Отметить прочитанной
+                    showMarkAsReadDialog(book)
+                }
+                else -> {
+                    // Начать читать
+                    showStartReadingDialog(book)
                 }
             }
-        } else {
-            imgCoverBig.setImageResource(R.drawable.ic_book_placeholder)
+            popupWindow.dismiss()
         }
 
-        AlertDialog.Builder(this)
-            .setView(dialogView)
-            .setPositiveButton("Закрыть", null)
-            .show()
+        action2.setOnClickListener {
+            when {
+                book.isRead -> {
+                    // Вернуть в "Читаю сейчас"
+                    viewModel.updateBook(book.copy(isRead = false, isCurrentlyReading = true))
+                }
+                book.isCurrentlyReading -> {
+                    // Вернуть в "Хочу прочитать"
+                    viewModel.updateBook(book.copy(isCurrentlyReading = false))
+                }
+                else -> {
+                    // Редактировать (только для "Хочу прочитать")
+                    showAddBookDialog(book)
+                }
+            }
+            popupWindow.dismiss()
+        }
+
+        cancel.setOnClickListener { popupWindow.dismiss() }
+
+        // Показать по центру
+        popupWindow.showAtLocation(anchorView, Gravity.CENTER, 0, 0)
+        popupWindow.animationStyle = R.style.PopupAnimation
+        currentPopup = popupWindow
     }
 }

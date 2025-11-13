@@ -15,7 +15,6 @@ import java.io.File
 class BookAdapter(
     private val onLongClick: (Book) -> Unit,
     private val onItemClick: (Book) -> Unit = {},
-    private val onCoverClick: (Book) -> Unit
 ) : ListAdapter<Book, BookAdapter.BookViewHolder>(BookDiffCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BookViewHolder {
@@ -66,9 +65,6 @@ class BookAdapter(
                 if (book.isRead) {
                     onItemClick(book)
                 }
-            }
-            imgCover.setOnClickListener {
-                onCoverClick(book)
             }
         }
     }

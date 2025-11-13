@@ -23,24 +23,8 @@ class ToReadFragment : Fragment() {
 
         adapter = BookAdapter(
             onLongClick = { book ->
-                AlertDialog.Builder(requireContext())
-                    .setTitle(book.title)
-                    .setItems(
-                        arrayOf(
-                            getString(R.string.start_reading),
-                            getString(R.string.edit_book),
-                            getString(R.string.cancel)
-                        )
-                    ) { _, which ->
-                        when (which) {
-                            0 -> (requireActivity() as MainActivity).showStartReadingDialog(book)
-                            1 -> (requireActivity() as MainActivity).showAddBookDialog(book)
-                        }
-                    }
-                    .show()
-            },
-            onCoverClick = { book ->
-                (requireActivity() as MainActivity).showQuickViewDialog(book)
+                val root = requireActivity().findViewById<View>(R.id.root_layout)
+                (requireActivity() as MainActivity).showContextMenuPopup(book, root)
             },
             onItemClick = { }
         )

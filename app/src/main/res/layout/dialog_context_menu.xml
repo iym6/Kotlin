@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:padding="16dp">
+
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="240dp"
+
+        android:scaleType="centerCrop"
+        android:layout_gravity="center"
+        />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:elevation="12dp"
+        android:layout_gravity="center"
+        android:padding="12dp">
+
+        <TextView
+            android:id="@+id/menu_action_1"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="@string/start_read"
+            android:textSize="16sp"
+            android:textColor="@color/black"
+            android:gravity="center"
+            android:background="#CCFFFFFF"
+            android:padding="12dp"
+            android:layout_margin="4dp" />
+
+        <TextView
+            android:id="@+id/menu_action_2"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="@string/editBook"
+            android:textSize="16sp"
+            android:textColor="@color/black"
+            android:background="#CCFFFFFF"
+            android:gravity="center"
+            android:padding="12dp"
+            android:layout_margin="4dp" />
+
+        <TextView
+            android:id="@+id/menu_cancel"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:background="#CCFFFFFF"
+            android:text="@string/cancel"
+            android:textSize="16sp"
+            android:textColor="#D32F2F"
+            android:gravity="center"
+            android:padding="12dp"
+            android:layout_margin="4dp" />
+    </LinearLayout>
+</FrameLayout>

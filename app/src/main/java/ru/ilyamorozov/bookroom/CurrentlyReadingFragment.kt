@@ -23,22 +23,8 @@ class CurrentlyReadingFragment : Fragment() {
 
         adapter = BookAdapter(
             onLongClick = { book ->
-                AlertDialog.Builder(requireContext())
-                    .setTitle(book.title)
-                    .setItems(
-                        arrayOf(
-                            getString(R.string.mark_as_read),
-                            getString(R.string.cancel)
-                        )
-                    ) { _, which ->
-                        if (which == 0) {
-                            (requireActivity() as MainActivity).showMarkAsReadDialog(book)
-                        }
-                    }
-                    .show()
-            },
-            onCoverClick = { book ->
-                (requireActivity() as MainActivity).showQuickViewDialog(book)
+                val root = requireActivity().findViewById<View>(R.id.root_layout)
+                (requireActivity() as MainActivity).showContextMenuPopup(book, root)
             },
             onItemClick = { }
         )

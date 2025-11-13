@@ -27,7 +27,7 @@ class RatingStarsView @JvmOverloads constructor(
         style = Paint.Style.FILL
     }
 
-    private val starSize = 65f
+    private val starSize = 81f
     private val starSpacing = 1f
     private val totalWidth = (starSize * 10) + (starSpacing * 9)
 
